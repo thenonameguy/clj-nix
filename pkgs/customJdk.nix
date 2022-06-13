@@ -51,7 +51,7 @@ in stdenv.mkDerivation ({
         if multiReleaseTargetJdkVersion == null then
           ""
         else
-          "--multi-release ${multiReleaseTargetJdkVersion}"
+          "--multi-release ${toString multiReleaseTargetJdkVersion}"
       })
           '') +
 
