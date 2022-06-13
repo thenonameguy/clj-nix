@@ -1,7 +1,7 @@
 { stdenv, runtimeShell, jdk17_headless }:
 
 { jdkBase ? jdk17_headless, name ? "customJDK", version ? "DEV"
-, multiRelease ? false, cljDrv ? null
+, multiReleaseTargetJdkVersion ? null, cljDrv ? null
   # Manually set the modules
 , jdkModules ? null, locales ? null, ... }@attrs:
 
@@ -45,9 +45,15 @@ in stdenv.mkDerivation ({
     (if cljDrv == null then ''
       export jdkModules="java.base"
     '' else ''
-      export jarPath=$(cat ${cljDrv}/nix-support/jar-path)
-      export jdkModules=$(jdeps --print-module-deps "$jarPath")
-    '') +
+            export jarPath=$(cat ${cljDrv}/nix-support/jar-path)
+            export jdkModules=$(jdeps --print-module-deps "$jarPath" \
+      ${
+        if multiReleaseTargetJdkVersion == null then
+          ""
+        else
+          "--multi-release ${multiReleaseTargetJdkVersion}"
+      })
+          '') +
 
     ''
       fi
@@ -60,7 +66,6 @@ in stdenv.mkDerivation ({
         --no-header-files \
         --no-man-pages \
         --add-modules ''${jdkModules} \
-        ${if multiRelease then "--multi-release" else ""} \
         ${if locales == null then "" else "--include-locales ${locales}"} \
         --compress 2 \
         --output ${if cljDrv == null then "$out" else "$jdk"}
