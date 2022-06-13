@@ -52,8 +52,8 @@ in stdenv.mkDerivation ({
                 ""
               else
                 "--multi-release ${toString multiReleaseTargetJdkVersion}"
-            }) \
-      --print-module-deps "$jarPath"
+            } \
+      --print-module-deps "$jarPath")
                 '') +
 
     ''
