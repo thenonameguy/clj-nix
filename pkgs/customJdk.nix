@@ -1,17 +1,9 @@
-{ stdenv
-, runtimeShell
-, jdk17_headless
-}:
+{ stdenv, runtimeShell, jdk17_headless }:
 
-{ jdkBase ? jdk17_headless
-, name ? "customJDK"
-, version ? "DEV"
-, cljDrv ? null
+{ jdkBase ? jdk17_headless, name ? "customJDK", version ? "DEV"
+, multiRelease ? false, cljDrv ? null
   # Manually set the modules
-, jdkModules ? null
-, locales ? null
-, ...
-}@attrs:
+, jdkModules ? null, locales ? null, ... }@attrs:
 
 let
 
@@ -24,16 +16,14 @@ let
     "locales"
   ];
 
-  template =
-    ''
-      #!${runtimeShell}
+  template = ''
+    #!${runtimeShell}
 
-      exec "@jdk@/bin/java" \
-          -jar "@jar@" "$@"
-    '';
+    exec "@jdk@/bin/java" \
+        -jar "@jar@" "$@"
+  '';
 
-in
-stdenv.mkDerivation ({
+in stdenv.mkDerivation ({
   inherit locales template;
   name = if cljDrv == null then name else cljDrv.pname;
   version = if cljDrv == null then version else cljDrv.version;
@@ -42,31 +32,22 @@ stdenv.mkDerivation ({
   stripDebugFlags = [ "--strip-unneeded" ];
   nativeBuildInputs = [ jdkBase ];
 
-  outputs =
-    if cljDrv == null then
-      [ "out" ]
-    else
-      [ "out" "jdk" ];
+  outputs = if cljDrv == null then [ "out" ] else [ "out" "jdk" ];
 
   dontUnpack = true;
 
-  installPhase =
-    ''
-      runHook preInstall
+  installPhase = ''
+    runHook preInstall
 
-      if [[ -z "$jdkModules" ]]; then
-    '' +
+    if [[ -z "$jdkModules" ]]; then
+  '' +
 
-    (if cljDrv == null then
-      ''
-        export jdkModules="java.base"
-      ''
-    else
-      ''
-        export jarPath=$(cat ${cljDrv}/nix-support/jar-path)
-        export jdkModules=$(jdeps --print-module-deps "$jarPath")
-      '')
-    +
+    (if cljDrv == null then ''
+      export jdkModules="java.base"
+    '' else ''
+      export jarPath=$(cat ${cljDrv}/nix-support/jar-path)
+      export jdkModules=$(jdeps --print-module-deps "$jarPath")
+    '') +
 
     ''
       fi
@@ -79,14 +60,15 @@ stdenv.mkDerivation ({
         --no-header-files \
         --no-man-pages \
         --add-modules ''${jdkModules} \
-        ${if locales==null then "" else ''--include-locales ${locales}''} \
+        ${if multiRelease then "--multi-release" else ""} \
+        ${if locales == null then "" else "--include-locales ${locales}"} \
         --compress 2 \
         --output ${if cljDrv == null then "$out" else "$jdk"}
-    ''
-    +
+    '' +
 
-    (if cljDrv == null then "" else
-    ''
+    (if cljDrv == null then
+      ""
+    else ''
       mkdir -p $out/bin
 
       binary="$out/bin/${cljDrv.pname}"
@@ -95,8 +77,7 @@ stdenv.mkDerivation ({
         --subst-var-by jar "$jarPath" \
         --subst-var-by jdk "$jdk"
       chmod +x "$binary"
-    '')
-    +
+    '') +
 
     ''
       runHook postInstall
