@@ -45,15 +45,16 @@ in stdenv.mkDerivation ({
     (if cljDrv == null then ''
       export jdkModules="java.base"
     '' else ''
-            export jarPath=$(cat ${cljDrv}/nix-support/jar-path)
-            export jdkModules=$(jdeps --print-module-deps "$jarPath" \
-      ${
-        if multiReleaseTargetJdkVersion == null then
-          ""
-        else
-          "--multi-release ${toString multiReleaseTargetJdkVersion}"
-      })
-          '') +
+        export jarPath=$(cat ${cljDrv}/nix-support/jar-path)
+        export jdkModules=$(jdeps \
+            ${
+              if multiReleaseTargetJdkVersion == null then
+                ""
+              else
+                "--multi-release ${toString multiReleaseTargetJdkVersion}"
+            }) \
+      --print-module-deps "$jarPath"
+                '') +
 
     ''
       fi
