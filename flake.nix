@@ -23,8 +23,7 @@
         {
           packages = {
 
-            inherit (pkgs) clj-builder deps-lock mk-deps-cache
-              mkCljBin mkCljLib mkGraalBin customJdk;
+            inherit (pkgs) clj-builder deps-lock;
 
           };
 
