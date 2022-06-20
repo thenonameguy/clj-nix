@@ -1,7 +1,7 @@
 { stdenv, runtimeShell, jdk17_headless }:
 
 { jdkBase ? jdk17_headless, name ? "customJDK", version ? "DEV"
-, multiReleaseTargetJdkVersion ? null, cljDrv ? null
+, multiReleaseTargetJdkVersion ? null, ignoreMissingDeps ? false, cljDrv ? null
   # Manually set the modules
 , jdkModules ? null, locales ? null, ... }@attrs:
 
@@ -53,6 +53,7 @@ in stdenv.mkDerivation ({
               else
                 "--multi-release ${toString multiReleaseTargetJdkVersion}"
             } \
+      ${if ignoreMissingDeps then "--ignore-missing-deps" else ""} \
       --print-module-deps "$jarPath")
                 '') +
 
