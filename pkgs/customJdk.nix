@@ -1,4 +1,8 @@
-{ stdenv, runtimeShell, jdk17_headless }:
+{ stdenv
+, lib
+, runtimeShell
+, jdk17_headless
+}:
 
 { jdkBase ? jdk17_headless, name ? "customJDK", version ? "DEV"
 , multiReleaseTargetJdkVersion ? null, ignoreMissingDeps ? false, cljDrv ? null
@@ -23,7 +27,9 @@ let
         -jar "@jar@" "$@"
   '';
 
-in stdenv.mkDerivation ({
+  jarPath = lib.fileContents "${cljDrv}/nix-support/jar-path";
+in
+stdenv.mkDerivation ({
   inherit locales template;
   name = if cljDrv == null then name else cljDrv.pname;
   version = if cljDrv == null then version else cljDrv.version;
@@ -56,7 +62,6 @@ in stdenv.mkDerivation ({
       ${if ignoreMissingDeps then "--ignore-missing-deps" else ""} \
       --print-module-deps "$jarPath")
                 '') +
-
     ''
       fi
 
@@ -81,7 +86,7 @@ in stdenv.mkDerivation ({
       binary="$out/bin/${cljDrv.pname}"
 
       substitute "$templatePath" "$binary" \
-        --subst-var-by jar "$jarPath" \
+        --subst-var-by jar "${jarPath}" \
         --subst-var-by jdk "$jdk"
       chmod +x "$binary"
     '') +
@@ -89,5 +94,10 @@ in stdenv.mkDerivation ({
     ''
       runHook postInstall
     '';
+  passthru = if cljDrv == null then { } else
+  {
+    inherit jarPath;
+    inherit (cljDrv) main-ns fullId groupId artifactId javaMain;
+  };
 
 } // extra-attrs)
